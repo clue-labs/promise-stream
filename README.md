@@ -9,9 +9,11 @@ for [ReactPHP](https://reactphp.org/).
 **Table of Contents**
 
 * [Usage](#usage)
-    * [buffer()](#buffer)
-    * [first()](#first)
-    * [all()](#all)
+    * [bufferString()](#bufferstring)
+    * [bufferArray()](#bufferarray)
+    * [~~buffer()~~](#buffer)
+    * [~~first()~~](#first)
+    * [~~all()~~](#all)
     * [unwrapReadable()](#unwrapreadable)
     * [unwrapWritable()](#unwrapwritable)
 * [Install](#install)

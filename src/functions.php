@@ -8,6 +8,84 @@ use React\Promise\PromiseInterface;
 use React\Stream\ReadableStreamInterface;
 use React\Stream\WritableStreamInterface;
 
+function bufferString(ReadableStreamInterface $stream, $offset = 0, $length = null)
+{
+    // stream already ended => resolve with empty buffer
+    if (!$stream->isReadable()) {
+        return React\Promise\resolve('');
+    }
+
+    assert($offset === 0 && ($length === null || $length > 0)); // TODO
+
+    $bufferer = null;
+    return new Promise(function ($resolve, $reject) use ($stream, $length, &$bufferer) {
+        $buffer = '';
+        $stream->on('data', $bufferer = function ($data) use (&$buffer, &$bufferer, $stream, $resolve, $length) {
+            $buffer .= $data;
+
+            if ($length !== null && isset($buffer[$length - 1])) {
+                $stream->removeListener('data', $bufferer);
+                $resolve(\substr($buffer, 0, $length));
+            }
+        });
+
+        $stream->on('error', function (\Exception $e) use ($reject) {
+            $reject(new \RuntimeException(
+                'An error occured on the underlying stream while buffering: ' . $e->getMessage(),
+                $e->getCode(),
+                $e
+            ));
+        });
+
+        $stream->on('close', function () use ($resolve, &$buffer) {
+            $resolve($buffer);
+        });
+    }, function () use (&$bufferer, $stream) {
+        $stream->removeListener('data', $bufferer);
+
+        throw new \RuntimeException('Cancelled buffering');
+    });
+}
+
+function bufferArray(ReadableStreamInterface $stream, $offset = 0, $length = null)
+{
+    // stream already ended => resolve with empty buffer
+    if (!$stream->isReadable()) {
+        return \React\Promise\resolve(array());
+    }
+
+    assert($offset === 0 && ($length === null || $length > 0)); // TODO
+
+    $bufferer = null;
+    return new Promise(function ($resolve, $reject) use ($stream, &$bufferer, $length) {
+        $buffer = array();
+        $stream->on('data', $bufferer = function ($data) use (&$buffer, &$bufferer, $stream, $resolve, $length) {
+            $buffer[] = $data;
+
+            if ($length !== null && isset($buffer[$length - 1])) {
+                $stream->removeListener('data', $bufferer);
+                $resolve(\substr($buffer, 0, $length));
+            }
+        });
+
+        $stream->on('error', function (\Exception $e) use ($reject) {
+            $reject(new \RuntimeException(
+                'An error occured on the underlying stream while buffering: ' . $e->getMessage(),
+                $e->getCode(),
+                $e
+            ));
+        });
+
+        $stream->on('close', function () use ($resolve, &$buffer) {
+            $resolve($buffer);
+        });
+    }, function () use (&$bufferer, $stream) {
+        $stream->removeListener('data', $bufferer);
+
+        throw new \RuntimeException('Cancelled buffering');
+    });
+}
+
 /**
  * Create a `Promise` which will be fulfilled with the stream data buffer.
  *
